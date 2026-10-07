@@ -50,3 +50,35 @@ def test_navegacion_catalogo(driver_logueado):
     assert driver.find_element(By.ID, "react-burger-menu-btn").is_displayed(), "Falta el menú"
     assert driver.find_element(By.CLASS_NAME, "product_sort_container").is_displayed(), "Falta el filtro"
     assert driver.find_element(By.CLASS_NAME, "shopping_cart_link").is_displayed(), "Falta el carrito"
+
+def test_agregar_producto_al_carrito(driver_logueado):
+    """Agrega el primer producto, verifica el contador y su presencia en el carrito."""
+    driver = driver_logueado
+    espera = obtener_espera(driver)
+
+    # Tomar el primer producto y guardar su nombre para compararlo después
+    primer_producto = espera.until(
+        EC.presence_of_element_located((By.CLASS_NAME, "inventory_item"))
+    )
+    nombre_esperado = primer_producto.find_element(By.CLASS_NAME, "inventory_item_name").text
+
+    # Click en su botón "Add to cart"
+    primer_producto.find_element(By.TAG_NAME, "button").click()
+
+    # El contador del carrito debe mostrar "1"
+    contador = espera.until(
+        EC.visibility_of_element_located((By.CLASS_NAME, "shopping_cart_badge"))
+    )
+    assert contador.text == "1", f"El contador mostró {contador.text} en lugar de 1"
+
+    # Ir al carrito
+    driver.find_element(By.CLASS_NAME, "shopping_cart_link").click()
+    espera.until(EC.url_contains("/cart.html"))
+
+    # El producto agregado debe estar en el carrito
+    items_carrito = driver.find_elements(By.CLASS_NAME, "cart_item")
+    assert len(items_carrito) == 1, "Debería haber exactamente 1 producto en el carrito"
+    nombre_en_carrito = items_carrito[0].find_element(By.CLASS_NAME, "inventory_item_name").text
+    assert nombre_en_carrito == nombre_esperado, (
+        f"Se esperaba '{nombre_esperado}' pero el carrito tiene '{nombre_en_carrito}'"
+    )
